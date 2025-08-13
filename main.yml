@@ -1,0 +1,57 @@
+- hosts: wordpress
+  become: yes
+
+  tasks:
+  - name: install packages
+    ansible.builtin.apt:
+        name:
+          - apache2
+          - ghostscript
+          - libapache2-mod-php
+          - mysql-server
+          - php
+          - php-bcmath
+          - php-curl
+          - php-mysql
+        state: latest
+        update_cache: yes
+  
+  - name: Start service apache2, if not started
+    ansible.builtin.service:
+      name: apache2
+      state: started
+      enabled: yes
+
+  - name: Download wordpress
+    ansible.builtin.get_url:
+      url: https://wordpress.org/latest.tar.gz
+      dest: /home/ubuntu/latest.tar.gz
+
+  - name: Extract latest.tar.gz
+    ansible.builtin.unarchive:
+      src: /home/ubuntu/latest.tar.gz
+      dest: /home/ubuntu/
+      remote_src: yes
+
+  - name: Copy file 
+    ansible.builtin.copy:
+      src: /home/ubuntu/wordpress/
+      dest: /var/www/html
+      remote_src: yes
+  
+  - name: Change file ownership, group and permissions
+    ansible.builtin.file:
+      path: /var/www/html
+      owner: www-data
+      group: www-data
+      mode: '0777'
+
+  - name: Removing index.html file
+    ansible.builtin.file:
+      path: /var/www/html/index.html
+      state: absent
+
+  - name: Restarting apache2
+    ansible.builtin.service:
+      name: apache2
+      state: restarted
